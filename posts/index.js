@@ -1,27 +1,45 @@
 const express = require('express');
-const {randomBytes} = require('crypto');
 const bodyParser = require('body-parser');
+const { randomBytes } = require('crypto');
 const cors = require('cors');
-//randomBytes to create random ids for all the posts
+const axios = require('axios');
+
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
-const posts = {};// repo to contain all the post requests.
+
+const posts = {};
+
 app.get('/posts', (req, res) => {
-    res.send(posts);
+  res.send(posts);
 });
 
-app.post('/posts', (req, res) => {
-    //id of random 4 bytes and convert it to string
-    const id = randomBytes(4).toString('hex');
-    const {title} = req.body;
-    posts[id] = {
-        id, title
-    };
-    res.status(202).send(posts[id]);
+app.post('/posts', async (req, res) => {
+  const id = randomBytes(4).toString('hex');
+  const { title } = req.body;
 
+  posts[id] = {
+    id,
+    title
+  };
+
+  await axios.post('http://localhost:4005/events', {
+    type: 'PostCreated',
+    data: {
+      id,
+      title
+    }
+  });
+
+  res.status(201).send(posts[id]);
+});
+
+app.post('/events', (req, res) => {
+  console.log('Received Event', req.body.type);
+
+  res.send({});
 });
 
 app.listen(4000, () => {
-    console.log('Port is working');
-})
+  console.log('Listening on 4000');
+});
